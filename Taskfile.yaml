@@ -1,0 +1,27 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the auto_shutdown binary for Linux AMD64
+    cmds:
+      - GOOS=linux GOARCH=amd64 go build -o auto_shutdown -ldflags="-s -w" auto_shutdown.go
+
+  dev:
+    desc: Run the auto_shutdown source using 'go run'
+    cmds:
+    - go run auto_shutdown.go
+
+  run:
+    desc: Run the auto_shutdown binary
+    cmds:
+      - ./auto_shutdown
+
+  clean:
+    desc: Remove the built binary
+    cmds:
+      - rm -f auto_shutdown
+
+  default:
+    desc: Default task to list tasks
+    cmds:
+      - task --list
