@@ -1,6 +1,6 @@
-# GCE VM Auto Shutdown
+# Cloud VM Auto Shutdown
 
-This project contains scripts for automatically shutting down Google Cloud Engine (GCE) virtual machines when they are idle. The functionality is implemented in both `Go` and `Bash`.
+This project contains scripts for automatically shutting down virtual machines when they are idle. Supported clouds are `GCP` and `Azure`. The functionality is implemented in both `Go` and `Bash`.
 
 ## Table of Contents
 - [Overview](#overview)
