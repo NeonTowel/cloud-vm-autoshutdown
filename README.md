@@ -5,23 +5,24 @@ This project contains scripts for automatically shutting down Google Cloud Engin
 ## Table of Contents
 - [Overview](#overview)
 - [Functionality](#functionality)
-- [Go Implementation (auto_shutdown.go)](#go-implementation-auto_shutdowngo)
-- [Bash Implementation (auto_shutdown.sh)](#bash-implementation-auto_shutdownsh)
+- [Azure: Go Implementation (auto_shutdown/cmd/azure)](#go-implementation-auto_shutdowncmdazure)
+- [GCP: Go Implementation (auto_shutdown/cmd/gcp)](#go-implementation-auto_shutdowncmdgcp)
+- [Legacy GCP Bash Implementation (auto_shutdown.sh)](#bash-implementation-auto_shutdownsh)
 - [Usage](#usage)
 - [Development (Go)](#development-go)
-- [Implementation in GCP](#implementation-in-gcp)
+- [Auto Shutdown Usage in GCP](#auto-shutdown-usage-in-gcp)
 - [Customization](#customization)
 - [Note](#note)
 
 ## Overview
 
-The auto-shutdown scripts monitor the system load and user activity on a GCE VM. If the system remains idle for a specified period, the scripts initiate a shutdown sequence. This helps to save resources and reduce costs by turning off unused VMs.
+The auto-shutdown scripts monitor the system load and user activity on a GCE or Azure VM. If the system remains idle for a specified period, the scripts initiate a shutdown sequence. This helps to save resources and reduce costs by turning off unused VMs.
 
 ## Functionality
 
-Both the Go and Bash implementations share the following core features:
+Core features:
 
-1. **GCE VM Check**: Verifies that the script is running on a GCE VM.
+1. **GCE or Azure VM Check**: Verifies that the script is running on a GCE or Azure VM.
 2. **System Load Monitoring**: Checks the 5-minute load average.
 3. **User Activity Monitoring**: Tracks SSH connections and logged-in users.
 4. **Idle Time Tracking**: Counts consecutive idle intervals.
@@ -33,16 +34,68 @@ Both the Go and Bash implementations share the following core features:
 - `intervals`: The number of consecutive idle checks required before shutdown.
 - `sleepTime`: The duration between each check (in seconds).
 
-## Go Implementation (auto_shutdown.go)
+## Azure: Go Implementation (auto_shutdown/cmd/azure)
 
-The Go version offers a more structured and type-safe implementation:
+The Azure version is structured similarly to the GCP implementation, providing a modular and type-safe approach:
 
-1. Uses constants for configuration parameters.
-2. Implements helper functions for various checks (e.g., `isGCEVM()`, `getSystemLoad()`, `getSSHUsers()`).
-3. Provides a main loop that continuously monitors the system state.
-4. Uses Go's concurrency features for timing and system calls.
+1. **Package Structure**: The core functionality is implemented in the `azure` package located under `auto_shutdown/pkg/azure`.
+2. **Main Function**: The `main.go` file in `auto_shutdown/cmd/azure` calls the `MonitorAndShutdown()` function from the `azure` package.
+3. **Concurrency and System Calls**: Utilizes Go's concurrency features for efficient monitoring and shutdown operations.
 
-## Bash Implementation (auto_shutdown.sh)
+### Building and Running
+
+1. **Build the Binary**:
+
+    ```bash
+    task build-azure
+    ```
+
+2. **Run the Binary**:
+
+    ```bash
+    task run-azure
+    ```
+
+3. **Development**:
+
+    - To run the source code directly:
+
+        ```bash
+        task dev-azure
+        ```
+
+
+## GCP: Go Implementation (auto_shutdown/cmd/gcp)
+
+The Go version is structured to provide a modular and type-safe implementation:
+
+1. **Package Structure**: The core functionality is implemented in the `gcp` package located under `auto_shutdown/pkg/gcp`.
+2. **Main Function**: The `main.go` file in `auto_shutdown/cmd/gcp` calls the `MonitorAndShutdown()` function from the `gcp` package.
+3. **Concurrency and System Calls**: Utilizes Go's concurrency features for efficient monitoring and shutdown operations.
+
+### Building and Running
+
+1. **Build the Binary**:
+
+    ```bash
+    task build-gcp
+    ```
+
+2. **Run the Binary**:
+
+    ```bash
+    task run-gcp
+    ```
+
+3. **Development**:
+
+    - To run the source code directly:
+
+        ```bash
+        task dev-gcp
+        ```
+
+## Legacy GCP Bash Implementation (auto_shutdown.sh)
 
 The Bash script provides a lightweight solution:
 
@@ -188,7 +241,7 @@ To download and install go-task:
    For other installation methods or more details, visit the official go-task GitHub repository:
    https://github.com/go-task/task#installation
 
-## Implementation in GCP
+## Auto Shutdown Usage in GCP
 
 To set the binary or script to be executable when the GCP VM starts using VM metadata options:
 
