@@ -1,6 +1,6 @@
-# Cloud VM Auto Shutdown
+# Linux VM Auto Shutdown
 
-This project contains scripts for automatically shutting down virtual machines when they are idle. Supported clouds are `GCP` and `Azure`. The functionality is implemented in both `Go` and `Bash`.
+This project contains Go implementation for automatically shutting down Linux VMs when they are idle. Designed to be run as SystemD Service on boot.
 
 ## Table of Contents
 - [Overview](#overview)
@@ -16,17 +16,16 @@ This project contains scripts for automatically shutting down virtual machines w
 
 ## Overview
 
-The auto-shutdown scripts monitor the system load and user activity on a GCE or Azure VM. If the system remains idle for a specified period, the scripts initiate a shutdown sequence. This helps to save resources and reduce costs by turning off unused VMs.
+The auto-shutdown app monitor the system load and user activity on a Linuxx VM. If the system remains idle for a specified period, the app initiate a shutdown sequence. This helps to save resources and reduce costs by turning off unused VMs.
 
 ## Functionality
 
 Core features:
 
-1. **GCE or Azure VM Check**: Verifies that the script is running on a GCE or Azure VM.
-2. **System Load Monitoring**: Checks the 5-minute load average.
-3. **User Activity Monitoring**: Tracks SSH connections and logged-in users.
-4. **Idle Time Tracking**: Counts consecutive idle intervals.
-5. **Shutdown Sequence**: Initiates a shutdown after a specified idle period.
+1. **System Load Monitoring**: Checks the 5-minute load average.
+2. **User Activity Monitoring**: Tracks SSH connections and logged-in users.
+3. **Idle Time Tracking**: Counts consecutive idle intervals.
+4. **Shutdown Sequence**: Initiates a shutdown after a specified idle period.
 
 ### Key Parameters
 
@@ -34,12 +33,12 @@ Core features:
 - `intervals`: The number of consecutive idle checks required before shutdown.
 - `sleepTime`: The duration between each check (in seconds).
 
-## Azure: Go Implementation (auto_shutdown/cmd/azure)
+## Universal implementation (for SystemD)
 
-The Azure version is structured similarly to the GCP implementation, providing a modular and type-safe approach:
+The Universal version is structured using a modular and type-safe approach:
 
-1. **Package Structure**: The core functionality is implemented in the `azure` package located under `auto_shutdown/pkg/azure`.
-2. **Main Function**: The `main.go` file in `auto_shutdown/cmd/azure` calls the `MonitorAndShutdown()` function from the `azure` package.
+1. **Package Structure**: The core functionality is implemented in the `universal` package located under `auto_shutdown/pkg/universal`.
+2. **Main Function**: The `main.go` file in `auto_shutdown/cmd/universal` calls the `MonitorAndShutdown()` function from the `universal` package.
 3. **Concurrency and System Calls**: Utilizes Go's concurrency features for efficient monitoring and shutdown operations.
 
 ### Building and Running
@@ -47,13 +46,13 @@ The Azure version is structured similarly to the GCP implementation, providing a
 1. **Build the Binary**:
 
     ```bash
-    task build-azure
+    task build-universal
     ```
 
 2. **Run the Binary**:
 
     ```bash
-    task run-azure
+    task run-universal
     ```
 
 3. **Development**:
@@ -61,126 +60,48 @@ The Azure version is structured similarly to the GCP implementation, providing a
     - To run the source code directly:
 
         ```bash
-        task dev-azure
+        task dev-universal
         ```
 
+## Deprecated GCP and Azure specific implementations
 
-## GCP: Go Implementation (auto_shutdown/cmd/gcp)
+The Go implementations in `auto_shutdown/cmd/gcp` and `auto_shutdown/cmd/azure` are now deprecated in favor of the universal SystemD approach.
 
-The Go version is structured to provide a modular and type-safe implementation:
+The implementations are provided as a reference. The tasks to build these implementations remain in the taskfile for now. Examine the `Taskfile.yaml` for details.
 
-1. **Package Structure**: The core functionality is implemented in the `gcp` package located under `auto_shutdown/pkg/gcp`.
-2. **Main Function**: The `main.go` file in `auto_shutdown/cmd/gcp` calls the `MonitorAndShutdown()` function from the `gcp` package.
-3. **Concurrency and System Calls**: Utilizes Go's concurrency features for efficient monitoring and shutdown operations.
+## Deprecated shell scripts
 
-### Building and Running
-
-1. **Build the Binary**:
-
-    ```bash
-    task build-gcp
-    ```
-
-2. **Run the Binary**:
-
-    ```bash
-    task run-gcp
-    ```
-
-3. **Development**:
-
-    - To run the source code directly:
-
-        ```bash
-        task dev-gcp
-        ```
-
-## Legacy GCP Bash Implementation (auto_shutdown.sh)
-
-The Bash script provides a lightweight solution:
-
-1. Uses environment variables or default values for configuration.
-2. Leverages system commands like `uptime`, `ss`, and `who` for monitoring.
-3. Uses a while loop for continuous monitoring.
-4. Implements simple arithmetic for counting idle intervals.
-
-## Usage
-
-### Go Version
-
-1. Compile the Go script:
-
-```bash
-go build -o auto_shutdown auto_shutdown.go
-
-# or if you have go-task installed:
-task build
-```
-
-2. Run the compiled binary:
-
-```bash
-./auto_shutdown
-```
-
-### Bash Version
-
-1. Make the script executable:
-
-```bash
-chmod +x auto_shutdown.sh
-```
-
-2. Run the script:
-
-```bash
-./auto_shutdown.sh
-```
+The shell script implementation in `scripts/auto_shutdown.sh` (which was the original implementation for GCP) remains for reference.
 
 ## Development (Go)
 
 To develop and build the Go version:
 
-1. Ensure you have `Go` (version 1.23.1 or later) installed on your system. You can download it from https://golang.org/dl/.
+1. Ensure you have `Go` (version 1.24.1 or later) installed on your system. You can download it from https://golang.org/dl/. Note: This is the Go version used in development, earlier versions may work perfectly fine.
 
-2. Clone the repository or navigate to the project directory:
+2. Clone the repository.
 
-    ```bash
-    cd cloud/gcp/compute
-    ```
-
-5. To build the Go script, run:
+5. To build the universal binary, run:
 
     ```bash
-    go build -o auto_shutdown auto_shutdown.go
+    task build-universal
     ```
+
+    Binary can be found from `./build` directory.
 
 6. For development, you can use the following commands:
 
    - To run the script without compiling:
 
         ```bash
-        go run auto_shutdown.go
+        task dev-universal
         ```
 
    - To format your code:
 
         ```bash
-        go fmt auto_shutdown.go
+        task fmt
         ```
-
-   - To run tests (if you've written any):
-
-        ```bash
-        go test
-        ```
-
-7. To compile you can use:
-
-
-    ```bash
-    GOOS=linux GOARCH=amd64 go build -o auto_shutdown auto_shutdown.go
-    ```
 
 ### Using go-task for task automation
 
@@ -188,29 +109,10 @@ If you're using `go-task` for task automation, then you can use:
 
 In addition to the `build` task, the [Taskfile.yaml](./Taskfile.yaml) includes:
 
-1. `build`: Compiles the `auto_shutdown.go` script to executable binary:
-
-    ```bash
-    task build
-    ```
-
-2. `dev`: Runs `auto_shutdown.go` directly for quick testing:
-
-    ```bash
-    task dev
-    ```
-
-3. `run`: Executes the compiled binary:
-
-    ```bash
-    task run
-    ```
-
-4. `clean`: Removes the built binary:
-
-    ```bash
-    task clean
-    ```
+1. `task build`: Compiles the executable binaries.
+2. `task dev-universal`: Runs `auto_shutdown/cmd/universal/main.go` directly for quick testing.
+3. `task run-universal`: Runs `build/auto_shutdown_universal` binary, if it exists.
+4. `task clean`: Removes the built binaries from `./build` path.
 
 These tasks streamline development, execution, and cleanup of the auto_shutdown project.
 Remember to handle errors appropriately, implement logging for debugging, and consider adding unit tests for critical functions to ensure reliability.
@@ -269,4 +171,4 @@ Both versions allow customization of the threshold, intervals, and sleep time. M
 
 ## Note
 
-Ensure that the script has the necessary permissions to execute system commands and initiate a shutdown. It's recommended to run these scripts with appropriate privileges on your GCE VMs.
+Ensure that the script has the necessary permissions to execute system commands and initiate a shutdown. It's recommended to run these scripts with appropriate privileges VMs.

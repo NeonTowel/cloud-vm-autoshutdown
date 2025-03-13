@@ -12,13 +12,19 @@ tasks:
     dir: auto_shutdown/cmd/azure
     cmds:
       - GOOS=linux GOARCH=amd64 go build -o ../../../build/auto_shutdown_azure -ldflags="-s -w" main.go
-  
+
+  build-universal:
+    desc: Build the auto_shutdown binary for Linux AMD64
+    dir: auto_shutdown/cmd/universal
+    cmds:
+      - GOOS=linux GOARCH=amd64 go build -o ../../../build/auto_shutdown_universal -ldflags="-s -w" main.go
+
   build:
     desc: Build the auto_shutdown binary
     deps:
       - build-gcp
       - build-azure
-
+      - build-universal
   dev-gcp:
     desc: Run the auto_shutdown source using 'go run'
     dir: auto_shutdown/cmd/gcp
@@ -28,6 +34,12 @@ tasks:
   dev-azure:
     desc: Run the auto_shutdown_azure source using 'go run'
     dir: auto_shutdown/cmd/azure
+    cmds:
+      - go run main.go
+
+  dev-universal:
+    desc: Run the auto_shutdown_universal source using 'go run'
+    dir: auto_shutdown/cmd/universal
     cmds:
       - go run main.go
 
@@ -43,12 +55,25 @@ tasks:
     cmds:
       - ./auto_shutdown_azure
 
+  run-universal:
+    desc: Run the auto_shutdown_universal binary
+    dir: build
+    cmds:
+      - ./auto_shutdown_universal
+
   clean:
     desc: Remove the built binary
     dir: build
     cmds:
       - rm -f auto_shutdown_gcp
       - rm -f auto_shutdown_azure
+      - rm -f auto_shutdown_universal
+
+  fmt:
+    desc: Format the code
+    dir: auto_shutdown
+    cmds:
+      - go fmt ./...
 
   default:
     desc: Default task to list tasks

@@ -12,7 +12,7 @@ import (
 // Public functions
 
 func StartShutdownMonitor(threshold float64, intervals int, sleepTime int) {
-	fmt.Println("Purpose: \tMonitor system load and SSH users on a GCE VM")
+	fmt.Println("Purpose: \tMonitor system load and SSH users on a Linux VM")
 	fmt.Printf("Shutdown Criteria:\n")
 	fmt.Printf("  - System load 5 min average below %.2f\n", threshold)
 	fmt.Printf("  - For %d consecutive intervals\n", intervals)
