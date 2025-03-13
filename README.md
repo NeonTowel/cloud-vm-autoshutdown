@@ -18,6 +18,12 @@ This project contains Go implementation for automatically shutting down Linux VM
 
 The auto-shutdown app monitor the system load and user activity on a Linuxx VM. If the system remains idle for a specified period, the app initiate a shutdown sequence. This helps to save resources and reduce costs by turning off unused VMs.
 
+## Supported Linux distributions
+
+The script should work reliably on common Linux distributions where the `/proc` filesystem, `iproute2`, `util-linux`, and basic `GNU utilities` (coreutils) are available. This includes distributions like `Ubuntu`, `Debian`, `CentOS`, `Fedora`, and their derivatives.
+
+For further compatibility, ensure the availability of these utilities and their correct paths if scripts use absolute paths for execution on specialized or minimal environments.
+
 ## Functionality
 
 Core features:
