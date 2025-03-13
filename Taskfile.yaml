@@ -1,4 +1,11 @@
+# PURPOSE: Define tasks for building, running, and managing the auto_shutdown application
+# SCOPE: Build and Development Automation
+# STATUS: Stable
 version: '3'
+
+includes:
+  systemd:
+    taskfile: taskfile.systemd.yaml
 
 tasks:
   build-gcp:
@@ -25,6 +32,7 @@ tasks:
       - build-gcp
       - build-azure
       - build-universal
+
   dev-gcp:
     desc: Run the auto_shutdown source using 'go run'
     dir: auto_shutdown/cmd/gcp
@@ -44,6 +52,7 @@ tasks:
       SHUTDOWN_THRESHOLD: 0.20
       SHUTDOWN_INTERVALS: 60
       SHUTDOWN_SLEEP_TIME: 30
+      INITIAL_DELAY: 15
     cmds:
       - go run main.go
 

@@ -1,0 +1,135 @@
+# PURPOSE: Manage the auto_shutdown application as a SystemD service
+# SCOPE: SystemD Service Management
+# STATUS: Stable
+version: '3'
+
+tasks:
+  build-binary:
+    desc: Build the auto_shutdown binary for Linux AMD64
+    cmds:
+      - task: :build-universal
+
+  install-binary:
+    cmds:
+      - |
+        if [ -f /usr/local/bin/auto_shutdown ]; then
+          read -p "The file /usr/local/bin/auto_shutdown already exists. Do you want to overwrite it? (y/n): " choice
+          if [ "$choice" != "y" ]; then
+            echo "Installation aborted."
+            exit 1
+          fi
+        fi
+      - sudo cp ./build/auto_shutdown_universal /usr/local/bin/auto_shutdown
+    desc: "Install the universal binary to /usr/local/bin"
+
+  install-service:
+    silent: true
+    cmds:
+      - echo "🔧 Installing Auto Shutdown service..."
+      - |
+        echo "[Unit]
+        Description=Auto Shutdown Service
+        After=network.target
+
+        [Service]
+        ExecStart=/usr/local/bin/auto_shutdown
+        Restart=on-failure
+
+        [Install]
+        WantedBy=multi-user.target" | sudo tee /etc/systemd/system/auto_shutdown.service
+      - sudo systemctl daemon-reload
+      - sudo systemctl enable auto_shutdown.service
+    desc: "Install the auto_shutdown SystemD service"
+
+  uninstall-service:
+    ignore_error: true
+    silent: true
+    cmds:
+      - echo "Disabling the auto_shutdown SystemD service..."
+      - task systemd:disable
+      - echo "Stopping the auto_shutdown SystemD service..."
+      - task systemd:stop
+      - echo "Removing the auto_shutdown SystemD service..."
+      - sudo rm /etc/systemd/system/auto_shutdown.service
+      - echo "Reloading the SystemD daemon..."
+      - task systemd:reload
+      - |
+        if [ -f /usr/local/bin/auto_shutdown ]; then
+          read -p "The file /usr/local/bin/auto_shutdown exists. Do you want to remove it as well? (y/n): " choice
+          if [ "$choice" == "y" ]; then
+            if task systemd:uninstall-binary; then
+              echo "Binary removed."
+            else
+              echo "Failed to remove binary."
+            fi
+          else
+            echo "Binary not removed."
+          fi
+        fi
+      - echo "Uninstallation complete."
+    desc: "Uninstall the auto_shutdown SystemD service" 
+
+  uninstall-binary:
+    cmds:
+      - sudo rm /usr/local/bin/auto_shutdown
+    desc: "Uninstall the auto_shutdown binary"  
+
+  start:
+    cmds:
+      - sudo systemctl start auto_shutdown.service
+    desc: "Start the auto_shutdown SystemD service"
+
+  stop:
+    cmds:
+      - sudo systemctl stop auto_shutdown.service
+    desc: "Stop the auto_shutdown SystemD service"
+
+  restart:
+    cmds:
+      - sudo systemctl restart auto_shutdown.service
+    desc: "Restart the auto_shutdown SystemD service"
+
+  status:
+    ignore_error: true
+    cmds:
+      - sudo systemctl status auto_shutdown.service
+    desc: "Check the status of the auto_shutdown SystemD service"
+
+  disable:
+    cmds:
+      - sudo systemctl disable auto_shutdown.service
+    desc: "Disable the auto_shutdown SystemD service"
+
+  enable:
+    cmds:
+      - sudo systemctl enable auto_shutdown.service
+    desc: "Enable the auto_shutdown SystemD service"
+
+  reload:
+    cmds:
+      - sudo systemctl daemon-reload
+    desc: "Reload the SystemD daemon"
+
+  logs:
+    ignore_error: true
+    cmds:
+      - sudo journalctl -u auto_shutdown.service 
+    desc: "View the logs of the auto_shutdown SystemD service"
+
+  logs-follow:
+    ignore_error: true
+    cmds:
+      - sudo journalctl -u auto_shutdown.service -n 50 -f
+    desc: "View the logs of the auto_shutdown SystemD service, tailing the logs"
+
+  all:
+    deps:
+      - build-binary
+      - install-binary
+      - install-service
+    desc: "Build, install the binary, and set up the SystemD service, but don't start it yet."
+    cmds:
+      - |
+        echo "SystemD service installed, but not started yet."
+        echo "To start it, run 'task start-service' or 'sudo systemctl start auto_shutdown.service'"
+
