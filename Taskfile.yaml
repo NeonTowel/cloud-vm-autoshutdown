@@ -40,6 +40,10 @@ tasks:
   dev-universal:
     desc: Run the auto_shutdown_universal source using 'go run'
     dir: auto_shutdown/cmd/universal
+    env: # for testing purposes
+      SHUTDOWN_THRESHOLD: 0.20
+      SHUTDOWN_INTERVALS: 60
+      SHUTDOWN_SLEEP_TIME: 30
     cmds:
       - go run main.go
 

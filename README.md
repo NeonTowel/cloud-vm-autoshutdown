@@ -35,9 +35,24 @@ Core features:
 
 ### Key Parameters
 
-- `threshold`: The system load threshold below which the system is considered idle.
+- `threshold`: The 5 minute system load average threshold below which the system is considered idle.
 - `intervals`: The number of consecutive idle checks required before shutdown.
 - `sleepTime`: The duration between each check (in seconds).
+
+These can now be configured as system environment variables, with fallback to default settings if environment variables are not set:
+
+**Environment variables:** 
+
+- `SHUTDOWN_THRESHOLD`
+- `SHUTDOWN_INTERVALS`
+- `SHUTDOWN_SLEEP_TIME`
+
+**Default values:**
+
+- `threshold` = 0.15
+- `intervals` = 15
+- `sleepTime` = 30
+
 
 ## Universal implementation (for SystemD)
 
