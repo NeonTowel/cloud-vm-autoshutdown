@@ -11,14 +11,6 @@ tasks:
 
   install-binary:
     cmds:
-      - |
-        if [ -f /usr/local/bin/auto_shutdown ]; then
-          read -p "The file /usr/local/bin/auto_shutdown already exists. Do you want to overwrite it? (y/n): " choice
-          if [ "$choice" != "y" ]; then
-            echo "Installation aborted."
-            exit 1
-          fi
-        fi
       - sudo cp ./build/auto_shutdown_universal /usr/local/bin/auto_shutdown
     desc: "Install the universal binary to /usr/local/bin"
 
@@ -32,27 +24,33 @@ tasks:
         After=network.target
 
         [Service]
+        Environment=SHUTDOWN_THRESHOLD=0.20
+        Environment=SHUTDOWN_INTERVALS=60
+        Environment=SHUTDOWN_SLEEP_TIME=30
+        Environment=INITIAL_DELAY=3600
+        Environment=AUTO_SHUTDOWN_SILENCE_AZURE_WARNING=true
         ExecStart=/usr/local/bin/auto_shutdown
         Restart=on-failure
 
         [Install]
         WantedBy=multi-user.target" | sudo tee /etc/systemd/system/auto_shutdown.service
-      - sudo systemctl daemon-reload
-      - sudo systemctl enable auto_shutdown.service
+      - task: reload
+      - task: enable
     desc: "Install the auto_shutdown SystemD service"
 
   uninstall-service:
     ignore_error: true
     silent: true
+    interactive: true
     cmds:
       - echo "Disabling the auto_shutdown SystemD service..."
-      - task systemd:disable
+      - task: disable
       - echo "Stopping the auto_shutdown SystemD service..."
-      - task systemd:stop
+      - task: stop
       - echo "Removing the auto_shutdown SystemD service..."
       - sudo rm /etc/systemd/system/auto_shutdown.service
       - echo "Reloading the SystemD daemon..."
-      - task systemd:reload
+      - task: reload
       - |
         if [ -f /usr/local/bin/auto_shutdown ]; then
           read -p "The file /usr/local/bin/auto_shutdown exists. Do you want to remove it as well? (y/n): " choice
@@ -123,6 +121,7 @@ tasks:
     desc: "View the logs of the auto_shutdown SystemD service, tailing the logs"
 
   all:
+    silent: true
     deps:
       - build-binary
       - install-binary
@@ -131,5 +130,5 @@ tasks:
     cmds:
       - |
         echo "SystemD service installed, but not started yet."
-        echo "To start it, run 'task start-service' or 'sudo systemctl start auto_shutdown.service'"
+        echo "To start it, run 'task systemd:start' or 'sudo systemctl start auto_shutdown.service'"
 

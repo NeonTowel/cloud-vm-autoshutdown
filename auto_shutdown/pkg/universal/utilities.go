@@ -65,3 +65,14 @@ func getEnvOrDefaultInt(envVar string, defaultValue int) int {
 	}
 	return defaultValue
 }
+
+// PURPOSE: Retrieve environment variable as boolean or use default
+// WHY: Allows configuration via environment with fallback
+func getEnvOrDefaultBool(envVar string, defaultValue bool) bool {
+	if value, exists := os.LookupEnv(envVar); exists {
+		if parsedValue, err := strconv.ParseBool(value); err == nil {
+			return parsedValue
+		}
+	}
+	return defaultValue
+}

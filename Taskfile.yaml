@@ -6,6 +6,8 @@ version: '3'
 includes:
   systemd:
     taskfile: taskfile.systemd.yaml
+  azure-deallocate:
+    taskfile: taskfile.azure.yaml
 
 tasks:
   build-gcp:
@@ -53,6 +55,7 @@ tasks:
       SHUTDOWN_INTERVALS: 60
       SHUTDOWN_SLEEP_TIME: 30
       INITIAL_DELAY: 15
+      AUTO_SHUTDOWN_SILENCE_AZURE_WARNING: false
     cmds:
       - go run main.go
 

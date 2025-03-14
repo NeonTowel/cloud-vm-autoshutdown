@@ -1,0 +1,152 @@
+version: '3'
+
+tasks:
+  check-metadata-service:
+    silent: true
+    cmds:
+      - |
+        echo "🔧 Checking Azure Metadata Service availability..."
+        if ! curl -H Metadata:true --noproxy "*" "http://169.254.169.254/metadata/instance?api-version=2021-01-01" -o /dev/null 2>&1; then
+          echo "❌ Azure Metadata Service not available"
+          exit 1
+        fi
+        echo "✅ Azure Metadata Service is available"
+      - |
+        echo "🔧 Retrieving VM Name and Resource Group from Azure Metadata Service..."
+        VM_METADATA=$(curl -s -H Metadata:true --noproxy "*" "http://169.254.169.254/metadata/instance?api-version=2021-01-01")
+        VM_NAME=$(echo "$VM_METADATA" | jq -r '.compute.name')
+        RESOURCE_GROUP=$(echo "$VM_METADATA" | jq -r '.compute.resourceGroupName')
+        if [ -z "$VM_NAME" ] || [ -z "$RESOURCE_GROUP" ]; then
+          echo "❌ Failed to retrieve VM Name or Resource Group"
+          exit 1
+        fi
+        echo "✅ VM Name: $VM_NAME"
+        echo "✅ Resource Group: $RESOURCE_GROUP"
+    desc: "Check Azure Metadata Service and retrieve VM details"
+
+  preflight:
+    silent: true
+    requires:
+      vars: [ VM_NAME, RESOURCE_GROUP ]
+    cmds:
+      - echo "🔧 Checking Azure CLI installation..."
+      - |
+        if ! command -v az > /dev/null 2>&1; then
+          echo "❌ Azure CLI not installed"
+          exit 1
+        fi
+      - echo "✅ Azure CLI is installed"
+      - echo "🔧 Checking MSI login..."
+      - |
+        if ! az login --identity > /dev/null 2>&1; then
+          echo "❌ MSI login failed"
+          exit 1
+        fi
+      - echo "✅ MSI login successful"
+      - echo "🔧 Checking Azure VM..."
+      - |
+        if ! az vm show --name {{ .VM_NAME }} --resource-group {{ .RESOURCE_GROUP }} > /dev/null 2>&1; then
+          echo "❌ Azure VM not found"
+          exit 1
+        fi
+      - echo "✅ Azure VM found"
+      - echo "🔧 Checking Azure VM power state..."
+      - |
+        VM_POWER_STATE=$(az vm get-instance-view --name {{ .VM_NAME }} --resource-group {{ .RESOURCE_GROUP }} --query "instanceView.statuses[?starts_with(code, 'PowerState/')].displayStatus" -o tsv)
+        if [ "$VM_POWER_STATE" != "VM running" ]; then
+          echo "❌ Azure VM is not running. Current state: $VM_POWER_STATE"
+          exit 1
+        fi
+      - echo "✅ Azure VM is running"
+    desc: "Run preflight checks"
+
+  install:
+    silent: true
+    cmds:
+      - task: check-metadata-service
+      - |
+        VM_METADATA=$(curl -s -H Metadata:true --noproxy "*" "http://169.254.169.254/metadata/instance?api-version=2021-01-01")
+        VM_NAME=$(echo "$VM_METADATA" | jq -r '.compute.name')
+        RESOURCE_GROUP=$(echo "$VM_METADATA" | jq -r '.compute.resourceGroupName')
+        if [ -z "$VM_NAME" ] || [ -z "$RESOURCE_GROUP" ]; then
+          echo "❌ Failed to retrieve VM Name or Resource Group"
+          exit 1
+        fi
+        echo "✅ VM Name: $VM_NAME"
+        echo "✅ Resource Group: $RESOURCE_GROUP"
+        echo "✅ Task File: {{ .TASKFILE }}"
+        task -t "{{ .TASKFILE }}" install-service VM_NAME=$VM_NAME RESOURCE_GROUP=$RESOURCE_GROUP
+    desc: "Install the Azure VM Deallocate service"
+  
+  install-service:
+    requires:
+      vars: [ VM_NAME, RESOURCE_GROUP ]
+    silent: true
+    cmds:
+      - echo "🔧 Installing Azure VM Deallocate Service..."
+      - |
+        echo "[Unit]
+        Description=Deallocate VM on shutdown
+        After=multi-user.target
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/bin/true
+        ExecStop=bash -c 'az login --identity && az vm deallocate -n {{ .VM_NAME }} -g {{ .RESOURCE_GROUP }}'
+
+        [Install]
+        WantedBy=multi-user.target" | sudo tee /etc/systemd/system/azure_deallocate.service
+      - task: enable
+      - task: start
+    desc: "Install the Azure VM Deallocate SystemD unit file"
+
+  uninstall:
+    cmds:
+      - task: disable
+      - task: stop
+      - echo "Removing the Azure VM Deallocate SystemD service..."
+      - sudo rm /etc/systemd/system/azure_deallocate.service
+      - task: reload
+    desc: "Uninstall the Azure VM Deallocate SystemD service"
+
+  start:
+    cmds:
+      - sudo systemctl start azure_deallocate.service
+    desc: "Start the Azure VM Deallocate SystemD service"
+
+  stop:
+    cmds:
+      - sudo systemctl stop azure_deallocate.service
+    desc: "Stop the Azure VM Deallocate SystemD service"
+    
+  restart:
+    cmds:
+      - sudo systemctl restart azure_deallocate.service
+    desc: "Restart the Azure VM Deallocate SystemD service"
+
+  status:
+    cmds:
+      - sudo systemctl status azure_deallocate.service
+    desc: "Check the status of the Azure VM Deallocate SystemD service"
+
+  disable:
+    cmds:
+      - sudo systemctl disable azure_deallocate.service
+    desc: "Disable the Azure VM Deallocate SystemD service" 
+
+  enable:
+    cmds:
+      - sudo systemctl enable azure_deallocate.service
+    desc: "Enable the Azure VM Deallocate SystemD service"
+    
+  reload:
+    cmds:
+      - sudo systemctl daemon-reload
+    desc: "Reload the SystemD daemon"
+
+  logs:
+    ignore_error: true
+    cmds: 
+      - sudo journalctl -u azure_deallocate.service -f
+    desc: "View the logs of the Azure VM Deallocate SystemD service"
